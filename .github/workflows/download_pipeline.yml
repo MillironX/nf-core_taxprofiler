@@ -23,7 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Install Nextflow
-        uses: nf-core/setup-nextflow@v1
+        uses: MillironX/setup-nextflow@feature/api-switch
 
       - uses: actions/setup-python@v5
         with:
