@@ -7,6 +7,7 @@ on:
   pull_request:
   release:
     types: [published]
+  workflow_dispatch:
 
 env:
   NXF_ANSI_LOG: false
@@ -18,8 +19,6 @@ concurrency:
 jobs:
   test:
     name: Run pipeline with test data
-    # Only run on push if this is the nf-core dev branch (merged PRs)
-    if: "${{ github.event_name != 'push' || (github.event_name == 'push' && github.repository == 'nf-core/taxprofiler') }}"
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -27,6 +26,9 @@ jobs:
         NXF_VER:
           - "23.04.0"
           - "latest-everything"
+          - "latest-stable"
+          - "latest-edge"
+          - "23.11"
         tags:
           - "test"
           - "test_nopreprocessing"
@@ -39,13 +41,18 @@ jobs:
           - "test_adapterremoval"
           - "test_bbduk"
           - "test_prinseqplusplus"
+        container_engine:
+          - mamba
+          - apptainer
+          - docker
+          - singularity
 
     steps:
       - name: Check out pipeline code
         uses: actions/checkout@v4
 
       - name: Install Nextflow
-        uses: nf-core/setup-nextflow@v1
+        uses: MillironX/setup-nextflow@feature/api-switch
         with:
           version: "${{ matrix.NXF_VER }}"
 
@@ -57,6 +64,18 @@ jobs:
           sudo locale-gen en_US.UTF-8
           sudo update-locale LANG=en_US.UTF-8
 
+      - name: Install Apptainer
+        if: "${{ matrix.container_engine == 'apptainer' }}"
+        uses: eWaterCycle/setup-apptainer@v2
+
+      - name: Install mamba
+        if: "${{ matrix.container_engine == 'mamba' }}"
+        uses: mamba-org/setup-micromamba@v1
+
+      - name: Install Singularity
+        if: "${{ matrix.container_engine == 'singularity' }}"
+        uses: singularityhub/install-singularity@main
+
       - name: Run pipeline with test data
         run: |
           if [[ "${{ matrix.tags }}" == "test_motus" ]]; then
@@ -64,7 +83,7 @@ jobs:
             python downloadDB.py > download_db_log.txt
             echo 'tool,db_name,db_params,db_path' > 'database_motus.csv'
             echo 'motus,db_mOTU,,db_mOTU' >> 'database_motus.csv'
-            nextflow run ${GITHUB_WORKSPACE} -profile docker,${{ matrix.tags }} --databases ./database_motus.csv --outdir ./results_${{ matrix.tags }};
+            nextflow run ${GITHUB_WORKSPACE} -profile ${{ matrix.container_engine }},${{ matrix.tags }} --databases ./database_motus.csv --outdir ./results_${{ matrix.tags }}_${{ matrix.container_engine }};
           else
-            nextflow run ${GITHUB_WORKSPACE} -profile docker,${{ matrix.tags }} --outdir ./results_${{ matrix.tags }};
+            nextflow run ${GITHUB_WORKSPACE} -profile ${{ matrix.container_engine }},${{ matrix.tags }} --outdir ./results_${{ matrix.tags }}_${{ matrix.container_engine }};
           fi
