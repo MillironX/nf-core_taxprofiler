@@ -47,7 +47,6 @@ jobs:
           - mamba
           - apptainer
           - docker
-          - podman
           - singularity
 
     steps:
