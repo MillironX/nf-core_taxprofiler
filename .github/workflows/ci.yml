@@ -43,9 +43,6 @@ jobs:
           - "test_adapterremoval"
           - "test_bbduk"
           - "test_prinseqplusplus"
-        use_all:
-          - true
-          - false
         container_engine:
           - mamba
           - apptainer
@@ -61,7 +58,6 @@ jobs:
         uses: MillironX/setup-nextflow@feature/api-switch
         with:
           version: "${{ matrix.NXF_VER }}"
-          all: "${{ matrix.use_all }}"
 
       - name: Show current locale
         run: locale
