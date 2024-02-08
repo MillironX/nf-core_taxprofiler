@@ -47,6 +47,12 @@ jobs:
         use_all:
           - true
           - false
+        container_engine:
+          - mamba
+          - apptainer
+          - docker
+          - podman
+          - singularity
 
     steps:
       - name: Check out pipeline code
@@ -66,6 +72,18 @@ jobs:
           sudo locale-gen en_US.UTF-8
           sudo update-locale LANG=en_US.UTF-8
 
+      - name: Install Apptainer
+        if: "${{ matrix.container_engine == 'apptainer' }}"
+        uses: eWaterCycle/setup-apptainer@v2
+
+      - name: Install mamba
+        if: "${{ matrix.container_engine == 'mamba' }}"
+        uses: mamba-org/setup-micromamba@v1
+
+      - name: Install Singularity
+        if: "${{ matrix.container_engine == 'singularity' }}"
+        uses: singularityhub/install-singularity@main
+
       - name: Run pipeline with test data
         run: |
           if [[ "${{ matrix.tags }}" == "test_motus" ]]; then
@@ -73,7 +91,7 @@ jobs:
             python downloadDB.py > download_db_log.txt
             echo 'tool,db_name,db_params,db_path' > 'database_motus.csv'
             echo 'motus,db_mOTU,,db_mOTU' >> 'database_motus.csv'
-            nextflow run ${GITHUB_WORKSPACE} -profile docker,${{ matrix.tags }} --databases ./database_motus.csv --outdir ./results_${{ matrix.tags }};
+            nextflow run ${GITHUB_WORKSPACE} -profile ${{ matrix.container_engine }},${{ matrix.tags }} --databases ./database_motus.csv --outdir ./results_${{ matrix.tags }}_${{ matrix.container_engine }};
           else
-            nextflow run ${GITHUB_WORKSPACE} -profile docker,${{ matrix.tags }} --outdir ./results_${{ matrix.tags }};
+            nextflow run ${GITHUB_WORKSPACE} -profile ${{ matrix.container_engine }},${{ matrix.tags }} --outdir ./results_${{ matrix.tags }}_${{ matrix.container_engine }};
           fi
