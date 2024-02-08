@@ -28,9 +28,7 @@ jobs:
           - "latest-everything"
           - "latest-stable"
           - "latest-edge"
-          - "23.04"
           - "23.11"
-          - "24.01.0-edge"
         tags:
           - "test"
           - "test_nopreprocessing"
